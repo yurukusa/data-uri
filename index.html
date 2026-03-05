@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data URI — Convert Files to Data URIs</title>
+<meta name="description" content="Convert files to data URIs and back. Images, SVG, CSS, HTML. Copy as CSS background or img tag.">
+<meta property="og:title" content="Data URI — Convert Files to Data URIs">
+<meta property="og:description" content="Convert files to data URIs and back. Images, SVG, CSS, HTML. Copy as CSS background or img tag.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://yurukusa.github.io/data-uri/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Data URI — Convert Files to Data URIs">
+<meta name="twitter:description" content="Convert files to data URIs and back. Images, SVG, CSS, HTML. Copy as CSS background or img tag.">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--text2:#8b949e;--accent:#58a6ff;--green:#3fb950;--red:#f85149;--yellow:#d29922}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh;display:flex;flex-direction:column}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+header{text-align:center;padding:2rem 1rem 1rem}
+header h1{font-size:1.8rem;margin-bottom:.25rem}
+header p{color:var(--text2);font-size:.95rem}
+main{max-width:900px;width:100%;margin:0 auto;padding:0 1rem 2rem;flex:1}
+.tabs{display:flex;gap:2px;margin-bottom:0;border-bottom:1px solid var(--border)}
+.tab{padding:.6rem 1.2rem;background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:.9rem;border-bottom:2px solid transparent;transition:color .2s,border-color .2s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.panel{display:none;padding:1.5rem 0}
+.panel.active{display:block}
+.drop-zone{border:2px dashed var(--border);border-radius:8px;padding:3rem 1rem;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:1rem}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--accent);background:rgba(88,166,255,.05)}
+.drop-zone p{color:var(--text2);margin-bottom:.5rem}
+.drop-zone .hint{font-size:.8rem;color:var(--text2)}
+input[type="file"]{display:none}
+.meta{display:flex;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem}
+.meta-item{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.4rem .8rem;font-size:.85rem}
+.meta-item span{color:var(--text2)}
+textarea{width:100%;min-height:120px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:"SFMono-Regular",Consolas,monospace;font-size:.8rem;padding:.75rem;resize:vertical}
+textarea:focus{outline:none;border-color:var(--accent)}
+.actions{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.75rem}
+button{padding:.5rem 1rem;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-size:.85rem;transition:border-color .2s,background .2s}
+button:hover{border-color:var(--accent);background:rgba(88,166,255,.1)}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+button.primary:hover{opacity:.9}
+.preview{margin-top:1rem;text-align:center}
+.preview img{max-width:100%;max-height:300px;border-radius:6px;border:1px solid var(--border)}
+.preview-label{font-size:.8rem;color:var(--text2);margin-bottom:.5rem}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--green);color:#fff;padding:.6rem 1.2rem;border-radius:6px;font-size:.85rem;opacity:0;transform:translateY(10px);transition:opacity .3s,transform .3s;pointer-events:none;z-index:100}
+.toast.show{opacity:1;transform:translateY(0)}
+.form-group{margin-bottom:1rem}
+.form-group label{display:block;font-size:.85rem;color:var(--text2);margin-bottom:.35rem}
+select,input[type="text"]{width:100%;padding:.5rem .75rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.9rem}
+select:focus,input[type="text"]:focus{outline:none;border-color:var(--accent)}
+.toggle-row{display:flex;align-items:center;gap:.5rem;margin-bottom:1rem}
+.toggle{position:relative;width:40px;height:22px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle .slider{position:absolute;inset:0;background:var(--border);border-radius:11px;transition:background .2s}
+.toggle .slider::before{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;left:3px;top:3px;transition:transform .2s}
+.toggle input:checked+.slider{background:var(--accent)}
+.toggle input:checked+.slider::before{transform:translateX(18px)}
+.info-section{margin-top:2rem;padding:1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:8px}
+.info-section h2{font-size:1.1rem;margin-bottom:.75rem}
+.info-section p,.info-section li{font-size:.9rem;color:var(--text2);margin-bottom:.5rem}
+.info-section ul{padding-left:1.5rem}
+.info-section code{background:var(--bg);padding:.15rem .4rem;border-radius:4px;font-size:.8rem;color:var(--accent)}
+footer{text-align:center;padding:1.5rem;color:var(--text2);font-size:.85rem;border-top:1px solid var(--border)}
+.size-compare{display:flex;gap:1rem;flex-wrap:wrap;margin-top:.75rem}
+.size-box{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.6rem 1rem;font-size:.85rem;flex:1;min-width:150px}
+.size-box .label{color:var(--text2);font-size:.75rem;display:block;margin-bottom:.2rem}
+.hidden{display:none}
+@media(max-width:600px){
+  .tabs{overflow-x:auto}
+  .tab{white-space:nowrap;padding:.5rem .8rem;font-size:.8rem}
+  header h1{font-size:1.4rem}
+}
+</style>
+</head>
+<body>
+<header>
+<h1>Data URI Converter</h1>
+<p>Convert files to data URIs and back. No upload — everything runs in your browser.</p>
+</header>
+<main>
+<div class="tabs">
+<button class="tab active" data-tab="file">File &rarr; Data URI</button>
+<button class="tab" data-tab="decode">Data URI &rarr; File</button>
+<button class="tab" data-tab="text">Text &rarr; Data URI</button>
+<button class="tab" data-tab="info">Info</button>
+</div>
+
+<!-- File to Data URI -->
+<div id="panel-file" class="panel active">
+<div class="drop-zone" id="dropZone">
+<p>Drop a file here or click to upload</p>
+<p class="hint">Any file type — images, SVG, fonts, documents</p>
+</div>
+<input type="file" id="fileInput">
+<div id="fileMeta" class="meta hidden"></div>
+<div id="filePreview" class="preview hidden"></div>
+<textarea id="fileOutput" class="hidden" readonly placeholder="Data URI will appear here..."></textarea>
+<div id="fileActions" class="actions hidden">
+<button class="primary" onclick="copyText('fileOutput','Data URI copied')">Copy Data URI</button>
+<button onclick="copyCss()">Copy as CSS background-image</button>
+<button onclick="copyImg()">Copy as HTML &lt;img&gt;</button>
+</div>
+</div>
+
+<!-- Data URI to File -->
+<div id="panel-decode" class="panel">
+<div class="form-group">
+<label>Paste a data URI</label>
+<textarea id="decodeInput" placeholder="data:image/png;base64,iVBORw0KGgo..." rows="5"></textarea>
+</div>
+<button class="primary" onclick="decodeUri()">Decode</button>
+<div id="decodeMeta" class="meta hidden" style="margin-top:1rem"></div>
+<div id="decodeSizeCompare" class="size-compare hidden"></div>
+<div id="decodePreview" class="preview hidden"></div>
+<div id="decodeActions" class="actions hidden">
+<button class="primary" onclick="downloadDecoded()">Download File</button>
+</div>
+</div>
+
+<!-- Text to Data URI -->
+<div id="panel-text" class="panel">
+<div class="form-group">
+<label>Text input</label>
+<textarea id="textInput" placeholder="Enter text, HTML, CSS, JSON, SVG..." rows="6"></textarea>
+</div>
+<div style="display:flex;gap:1rem;flex-wrap:wrap">
+<div class="form-group" style="flex:1;min-width:180px">
+<label>MIME type</label>
+<select id="textMime">
+<option value="text/plain">text/plain</option>
+<option value="text/html">text/html</option>
+<option value="text/css">text/css</option>
+<option value="text/javascript">text/javascript</option>
+<option value="application/json">application/json</option>
+<option value="image/svg+xml">image/svg+xml</option>
+</select>
+</div>
+<div class="form-group" style="flex:1;min-width:150px">
+<label>Charset</label>
+<select id="textCharset">
+<option value="utf-8">utf-8</option>
+<option value="ascii">ascii</option>
+</select>
+</div>
+</div>
+<div class="toggle-row">
+<label class="toggle"><input type="checkbox" id="textBase64" checked><span class="slider"></span></label>
+<span style="font-size:.85rem">Base64 encode</span>
+</div>
+<button class="primary" onclick="encodeText()">Generate Data URI</button>
+<div id="textMeta" class="meta hidden" style="margin-top:1rem"></div>
+<textarea id="textOutput" class="hidden" readonly placeholder="Data URI will appear here..." style="margin-top:.75rem"></textarea>
+<div id="textActions" class="actions hidden">
+<button class="primary" onclick="copyText('textOutput','Data URI copied')">Copy Data URI</button>
+</div>
+</div>
+
+<!-- Info -->
+<div id="panel-info" class="panel">
+<div class="info-section" style="margin-top:0">
+<h2>What are Data URIs?</h2>
+<p>Data URIs (also called data URLs) let you embed file content directly in HTML, CSS, or JavaScript as a string, without needing a separate HTTP request. The format is:</p>
+<p><code>data:[mediatype][;base64],data</code></p>
+<p>For example, a small red dot PNG:</p>
+<p><code>data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==</code></p>
+</div>
+<div class="info-section">
+<h2>Common Use Cases</h2>
+<ul>
+<li><strong>CSS backgrounds</strong> — embed small icons or patterns directly in stylesheets</li>
+<li><strong>Inline images in HTML</strong> — reduce HTTP requests for small images</li>
+<li><strong>SVG embedding</strong> — embed SVG icons without extra files</li>
+<li><strong>Favicons</strong> — embed favicons directly in HTML <code>&lt;link&gt;</code> tags</li>
+<li><strong>Email HTML</strong> — embed images in email templates (some clients support this)</li>
+</ul>
+</div>
+<div class="info-section">
+<h2>Size Recommendations</h2>
+<ul>
+<li><strong>IE 8</strong> — 32 KB limit (no longer relevant for most projects)</li>
+<li><strong>Modern browsers</strong> — practical limit around <strong>2 MB</strong>, though there is no hard spec limit</li>
+<li><strong>Performance</strong> — data URIs increase CSS/HTML file size by ~33% (base64 overhead). For files over 10-20 KB, a separate file with HTTP caching is usually faster</li>
+<li><strong>Best for</strong> — small images (&lt;5 KB), SVG icons, fonts used in critical CSS</li>
+</ul>
+</div>
+<div class="info-section">
+<h2>Base64 vs Plain Text</h2>
+<p>Binary files (images, fonts) must use base64 encoding. Text-based formats (SVG, HTML, CSS, JSON) can be embedded without base64 — just URL-encode special characters. Skipping base64 for text content produces smaller data URIs.</p>
+</div>
+</div>
+</main>
+
+<footer>
+<a href="https://yurukusa.github.io/dev-toolkit/">Dev Toolkit</a> — 78+ free browser-based developer tools
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* Tabs */
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('panel-'+t.dataset.tab).classList.add('active');
+  });
+});
+
+/* Toast */
+let toastTimer;
+function showToast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),2000);
+}
+
+/* Copy */
+function copyText(id,msg){
+  const val=document.getElementById(id).value;
+  if(!val)return;
+  navigator.clipboard.writeText(val).then(()=>showToast(msg||'Copied'));
+}
+
+/* Format bytes */
+function fmt(b){
+  if(b<1024)return b+' B';
+  if(b<1048576)return(b/1024).toFixed(1)+' KB';
+  return(b/1048576).toFixed(2)+' MB';
+}
+
+/* MIME to extension map */
+const mimeExt={
+  'image/png':'.png','image/jpeg':'.jpg','image/gif':'.gif','image/webp':'.webp',
+  'image/svg+xml':'.svg','image/x-icon':'.ico','image/bmp':'.bmp','image/avif':'.avif',
+  'text/plain':'.txt','text/html':'.html','text/css':'.css','text/javascript':'.js',
+  'application/json':'.json','application/pdf':'.pdf','application/zip':'.zip',
+  'font/woff':'.woff','font/woff2':'.woff2','font/ttf':'.ttf','font/otf':'.otf',
+  'audio/mpeg':'.mp3','audio/ogg':'.ogg','video/mp4':'.mp4','video/webm':'.webm',
+  'application/xml':'.xml','application/javascript':'.js'
+};
+
+function extFromMime(mime){return mimeExt[mime]||'.bin';}
+function isImage(mime){return mime&&mime.startsWith('image/');}
+
+/* ====== FILE TO DATA URI ====== */
+const dropZone=document.getElementById('dropZone');
+const fileInput=document.getElementById('fileInput');
+let currentDataUri='';
+
+dropZone.addEventListener('click',()=>fileInput.click());
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('dragover');});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop',e=>{
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  if(e.dataTransfer.files.length)processFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change',()=>{if(fileInput.files.length)processFile(fileInput.files[0]);});
+
+function processFile(file){
+  const reader=new FileReader();
+  reader.onload=function(){
+    currentDataUri=reader.result;
+    const mime=file.type||'application/octet-stream';
+    const meta=document.getElementById('fileMeta');
+    meta.innerHTML=`
+      <div class="meta-item"><span>MIME:</span> ${mime}</div>
+      <div class="meta-item"><span>File size:</span> ${fmt(file.size)}</div>
+      <div class="meta-item"><span>Data URI length:</span> ${currentDataUri.length.toLocaleString()} chars</div>
+    `;
+    meta.classList.remove('hidden');
+
+    const out=document.getElementById('fileOutput');
+    out.value=currentDataUri;
+    out.classList.remove('hidden');
+
+    document.getElementById('fileActions').classList.remove('hidden');
+
+    const preview=document.getElementById('filePreview');
+    if(isImage(mime)){
+      preview.innerHTML=`<p class="preview-label">Preview</p><img src="${currentDataUri}" alt="Preview">`;
+      preview.classList.remove('hidden');
+    }else{
+      preview.classList.add('hidden');
+      preview.innerHTML='';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function copyCss(){
+  if(!currentDataUri)return;
+  navigator.clipboard.writeText(`background-image: url(${currentDataUri});`).then(()=>showToast('CSS background-image copied'));
+}
+function copyImg(){
+  if(!currentDataUri)return;
+  navigator.clipboard.writeText(`<img src="${currentDataUri}" alt="">`).then(()=>showToast('HTML img tag copied'));
+}
+
+/* ====== DATA URI TO FILE ====== */
+let decodedBlob=null;
+let decodedMime='';
+
+function decodeUri(){
+  const raw=document.getElementById('decodeInput').value.trim();
+  if(!raw){showToast('Paste a data URI first');return;}
+  const match=raw.match(/^data:([^;,]+)?(;base64)?,(.*)$/s);
+  if(!match){showToast('Invalid data URI format');return;}
+
+  decodedMime=match[1]||'application/octet-stream';
+  const isBase64=!!match[2];
+  const data=match[3];
+
+  let bytes;
+  if(isBase64){
+    const bin=atob(data);
+    bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  }else{
+    const decoded=decodeURIComponent(data);
+    const enc=new TextEncoder();
+    bytes=enc.encode(decoded);
+  }
+
+  decodedBlob=new Blob([bytes],{type:decodedMime});
+
+  const meta=document.getElementById('decodeMeta');
+  meta.innerHTML=`
+    <div class="meta-item"><span>MIME:</span> ${decodedMime}</div>
+    <div class="meta-item"><span>Encoding:</span> ${isBase64?'base64':'plain text'}</div>
+    <div class="meta-item"><span>Extension:</span> ${extFromMime(decodedMime)}</div>
+  `;
+  meta.classList.remove('hidden');
+
+  const sc=document.getElementById('decodeSizeCompare');
+  const uriSize=new TextEncoder().encode(raw).length;
+  const fileSize=decodedBlob.size;
+  const overhead=uriSize-fileSize;
+  const pct=fileSize>0?((overhead/fileSize)*100).toFixed(1):'N/A';
+  sc.innerHTML=`
+    <div class="size-box"><span class="label">Data URI size</span>${fmt(uriSize)}</div>
+    <div class="size-box"><span class="label">File size</span>${fmt(fileSize)}</div>
+    <div class="size-box"><span class="label">Overhead</span>${fmt(overhead)} (${pct}%)</div>
+  `;
+  sc.classList.remove('hidden');
+
+  const preview=document.getElementById('decodePreview');
+  if(isImage(decodedMime)){
+    preview.innerHTML=`<p class="preview-label">Preview</p><img src="${raw}" alt="Preview">`;
+    preview.classList.remove('hidden');
+  }else{
+    preview.classList.add('hidden');
+    preview.innerHTML='';
+  }
+
+  document.getElementById('decodeActions').classList.remove('hidden');
+}
+
+function downloadDecoded(){
+  if(!decodedBlob)return;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(decodedBlob);
+  a.download='decoded'+extFromMime(decodedMime);
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ====== TEXT TO DATA URI ====== */
+function encodeText(){
+  const text=document.getElementById('textInput').value;
+  if(!text){showToast('Enter some text first');return;}
+  const mime=document.getElementById('textMime').value;
+  const charset=document.getElementById('textCharset').value;
+  const useBase64=document.getElementById('textBase64').checked;
+
+  let uri;
+  if(useBase64){
+    const encoded=btoa(unescape(encodeURIComponent(text)));
+    uri=`data:${mime};charset=${charset};base64,${encoded}`;
+  }else{
+    const encoded=encodeURIComponent(text).replace(/'/g,'%27').replace(/\(/g,'%28').replace(/\)/g,'%29');
+    uri=`data:${mime};charset=${charset},${encoded}`;
+  }
+
+  const meta=document.getElementById('textMeta');
+  const textBytes=new TextEncoder().encode(text).length;
+  meta.innerHTML=`
+    <div class="meta-item"><span>Text size:</span> ${fmt(textBytes)}</div>
+    <div class="meta-item"><span>Data URI length:</span> ${uri.length.toLocaleString()} chars</div>
+    <div class="meta-item"><span>Encoding:</span> ${useBase64?'base64':'URL-encoded'}</div>
+  `;
+  meta.classList.remove('hidden');
+
+  const out=document.getElementById('textOutput');
+  out.value=uri;
+  out.classList.remove('hidden');
+  document.getElementById('textActions').classList.remove('hidden');
+}
+
+/* Auto-decode on paste */
+document.getElementById('decodeInput').addEventListener('input',function(){
+  const v=this.value.trim();
+  if(v.startsWith('data:')&&v.length>20)decodeUri();
+});
+</script>
+</body>
+</html>
